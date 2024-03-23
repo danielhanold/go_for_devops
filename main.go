@@ -14,6 +14,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -684,6 +686,89 @@ func main() {
 	// retrieved from the context that was created in the previous line.
 	valueFromContext := extraValueFromContext(ctxWithValue, ctxKey)
 	fmt.Println("Value from context is:", valueFromContext)
+
+	/**
+	*
+	*
+	*
+	* Reading from / writing to files.
+	**/
+	// Read the contents of a file.
+	fileContents, err := os.ReadFile("random.yaml")
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+	}
+	// Return value from ReadFile is a slice of bytes ([]byte), and can be
+	// converted to a string using the string() function.
+	fmt.Println("File contents in bytes:", fileContents)
+	// for _, b := range fileContents {
+	// 	fmt.Println(b)
+	// }
+	// for _, b := range fileContents {
+	// 	fmt.Println(string(b))
+	// }
+	fmt.Println("File contents as a string:")
+	fmt.Println(string(fileContents))
+
+	// Writing local files (using os.Writefile())
+	// * Writes a complete file to disk
+	// * Will create the file if necessary
+	// * Will truncate the file if it exists
+	//
+	// Existing strings can be converted to a slice of bytes as following
+	// myString = "Hello, World!"
+	// byteSlice := []byte(myString)
+	if err := os.WriteFile("newrandom.yaml", fileContents, 0644); err != nil {
+		fmt.Println("Error writing file:", err)
+	}
+
+	// Reading remote files.
+	remoteClient := &http.Client{}
+	remoteReq, err := http.NewRequest("GET", "https://www.devdungeon.com/content/web-scraping-go", nil)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+	}
+	remoteResp, err := remoteClient.Do(remoteReq)
+	if err != nil {
+		fmt.Println("Error making request:", err)
+	}
+	// remoteResp contains an io.ReaderCloser that we can read as a file.
+	// Let's use io.ReadAll to read the entier content to data.
+	remoteData, err := io.ReadAll(remoteResp.Body)
+	if err != nil {
+		fmt.Println("Error reading remote data:", err)
+	}
+	remoteResp.Body.Close()
+	fmt.Printf("Remote data: %s...\n", string(remoteData[0:850]))
+
+	// Writing remote content to local file using os.OpenFile.
+	// Define several flags for how to interact with a file.
+	// Full list can be found here: https://pkg.go.dev/os#pkg-constants
+	// os.O_CREATE: Create the file if it does not exist.
+	// os.O_WRONLY: Open the file for writing only.
+	// os.O_TRUNC: Truncate the file to 0 bytes.
+	localFileFlags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+	localFile, err := os.OpenFile("remoteData.html", localFileFlags, 0644)
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+	}
+	defer localFile.Close()
+	// In Go, when you read the contents of an HTTP response body
+	// using io.ReadAll (or any reader function that consumes the body),
+	// you're reading from a stream. Once you read the stream to its end,
+	// there's no more data to read, and the stream does not automatically
+	// reset to the beginning. This means if you try to read from the same
+	// response body a second time with io.ReadAll, you won't get the data again;
+	// instead, you'll get an empty result because the stream is already at the end.
+	//
+	// Workaround: If you need to read the response body more than once,
+	// you will need to read it into a buffer and then work with that buffer
+	// multiple times, like so:
+	newReader := bytes.NewReader(remoteData)
+	// Write the remote data to the local file.
+	if _, err := io.Copy(localFile, newReader); err != nil {
+		fmt.Println("Error writing remote data to loca file: ", err)
+	}
 }
 
 /**
