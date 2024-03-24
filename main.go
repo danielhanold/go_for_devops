@@ -911,6 +911,13 @@ func main() {
 	fmt.Printf("Temporary file - size: %d bytes\n", tmpFileInfo.Size())
 	fmt.Printf("Temporary file - modified time: %s\n", tmpFileInfo.ModTime())
 
+	// Using files embedded in the binary through the `embed` package, see `embed.go`
+	fmt.Printf("Embedded users source file:\n %s\n", userSource)
+	embeddedConfig, err := modulesFs.ReadFile("config/config.json")
+	if err != nil {
+		fmt.Println("Error opening embedded file:", err)
+	}
+	fmt.Printf("Embedded file from list of files (config.json):\n%.80s...\n", string(embeddedConfig))
 }
 
 /**
