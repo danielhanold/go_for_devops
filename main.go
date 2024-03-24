@@ -23,6 +23,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -824,6 +826,91 @@ func main() {
 			fmt.Println("Error writing user:", err)
 		}
 	}
+
+	// Os-agnostic pathing.
+	// Print out all OS types and hardware architecture supported by go:
+	// go tool dist list
+	//
+	// The filepath package provides functions for manipulating file paths.
+	// The runtime package provides information about the runtime environment.
+	fmt.Println("Current runtime:", runtime.GOOS)
+	fmt.Println("Current runtime architecture:", runtime.GOARCH)
+	fmt.Println("Current number of CPU cores:", runtime.NumCPU())
+	fmt.Println("Current Go version:", runtime.Version())
+
+	// Joining a filepath.
+	wd, err := os.Getwd() // Get the current working directory.
+	if err != nil {
+		fmt.Println("Error getting working directory:", err)
+	}
+	fmt.Println("Current working directory:", wd)
+	content, err := os.ReadFile(filepath.Join(wd, "config", "config.json"))
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+	}
+	fmt.Printf("Config file content: %s...\n", string(content)[0:100])
+
+	// We can use the filepath package to get additional details about the file location.
+	sourceFilePath := filepath.Join(wd, "config", "config.json")
+	fmt.Println("Current working directory:", sourceFilePath)
+	fmt.Println("Base of the path:", filepath.Base(sourceFilePath))
+	fmt.Println("File extension:", filepath.Ext(sourceFilePath))
+	fpDir, fpFile := filepath.Split(sourceFilePath)
+	fmt.Println("Path directory:", fpDir)
+	fmt.Println("Filename:", fpFile)
+	// Convert our absolute path into a relative path (relative to the current workdir).
+	relPath, _ := filepath.Rel(wd, sourceFilePath)
+	fmt.Printf("Relative path (to %s): %s\n", wd, relPath)
+	// Convert a relative path to an absolute path.
+	absPath, err := filepath.Abs(relPath)
+	if err != nil {
+		fmt.Println("Error getting absolute path:", err)
+	}
+	fmt.Printf("Absolute path (for relative path %s, from %s): %s\n", relPath, wd, absPath)
+	// Determine if a path is absolute.
+	if filepath.IsAbs(relPath) {
+		fmt.Println("Path is absolute:", relPath)
+	} else {
+		fmt.Println("Path is relative:", relPath)
+	}
+
+	// Copy a file from its location to our OS' temporary directory (TMPDIR)
+	// Get the filename for the source file.
+	filename := filepath.Base(sourceFilePath)
+	if filename == "." {
+		// Path is empty
+		panic("Path is empty - cannot proceed")
+	}
+	// Open the source file.
+	sourceFile, err := os.Open(sourceFilePath)
+	if err != nil {
+		fmt.Println("Could not open source file", err)
+	}
+	defer sourceFile.Close()
+
+	// Create a new file in the temporary directory.
+	tmpPath := filepath.Join(os.TempDir(), filename)
+	// Open the temporary file.
+	tmpFile, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Could not open a new temporary file", err)
+	}
+	defer tmpFile.Close()
+	// Copy the file to the temporary file.
+	_, err = io.Copy(tmpFile, sourceFile)
+	if err != nil {
+		fmt.Println("Error copying file", err)
+	} else {
+		fmt.Printf("File %s has been copied to %s\n", sourceFilePath, tmpPath)
+	}
+	// Confirm that the file has been created, and print out the size.
+	tmpFileInfo, err := os.Stat(tmpPath)
+	if err != nil {
+		fmt.Println("Coudl you get stats for file:", err)
+	}
+	fmt.Printf("Temporary file - size: %d bytes\n", tmpFileInfo.Size())
+	fmt.Printf("Temporary file - modified time: %s\n", tmpFileInfo.ModTime())
+
 }
 
 /**

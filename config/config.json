@@ -1,0 +1,35 @@
+{
+  "appName": "MyApplication",
+  "version": "1.0.0",
+  "environment": "development",
+  "database": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "myappuser",
+    "password": "securepassword",
+    "databaseName": "myappdb"
+  },
+  "logging": {
+    "level": "debug",
+    "format": "text",
+    "file": "logs/myapp.log"
+  },
+  "features": {
+    "enableFeatureX": true,
+    "maxItemsToShow": 50,
+    "defaultTimeoutInSeconds": 30
+  },
+  "api": {
+    "baseUrl": "https://api.example.com",
+    "apiKey": "APIKEY12345",
+    "timeout": 5000
+  },
+  "email": {
+    "smtpHost": "smtp.example.com",
+    "smtpPort": 587,
+    "from": "noreply@example.com",
+    "username": "emailuser",
+    "password": "emailpassword",
+    "useTLS": true
+  }
+}
