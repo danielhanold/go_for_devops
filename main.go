@@ -20,11 +20,13 @@ import (
 	"fmt"
 	"go_for_devops/say"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
@@ -844,14 +846,14 @@ func main() {
 		fmt.Println("Error getting working directory:", err)
 	}
 	fmt.Println("Current working directory:", wd)
-	content, err := os.ReadFile(filepath.Join(wd, "config", "config.json"))
+	content, err := os.ReadFile(filepath.Join(wd, "json_data", "config.json"))
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 	}
 	fmt.Printf("Config file content: %s...\n", string(content)[0:100])
 
 	// We can use the filepath package to get additional details about the file location.
-	sourceFilePath := filepath.Join(wd, "config", "config.json")
+	sourceFilePath := filepath.Join(wd, "json_data", "config.json")
 	fmt.Println("Current working directory:", sourceFilePath)
 	fmt.Println("Base of the path:", filepath.Base(sourceFilePath))
 	fmt.Println("File extension:", filepath.Ext(sourceFilePath))
@@ -913,11 +915,51 @@ func main() {
 
 	// Using files embedded in the binary through the `embed` package, see `embed.go`
 	fmt.Printf("Embedded users source file:\n %s\n", userSource)
-	embeddedConfig, err := modulesFs.ReadFile("config/config.json")
+	embeddedConfig, err := modulesFs.ReadFile("json_data/config.json")
 	if err != nil {
 		fmt.Println("Error opening embedded file:", err)
 	}
 	fmt.Printf("Embedded file from list of files (config.json):\n%.80s...\n", string(embeddedConfig))
+
+	// Walking any filesystem using the io/fs package (in this case it's an embedded one)
+	// The io/fs package provides an interface for reading files from a filesystem.
+	err = fs.WalkDir(
+		modulesFs,
+		".",
+		func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() && filepath.Ext(path) == ".json" {
+				fmt.Println("JSON file:", path)
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		fmt.Println("Error walking directory:", err)
+	}
+
+	// Walk the filesystem of this module.
+	fmt.Println("Module files, excluding subdirectories")
+	err = fs.WalkDir(
+		os.DirFS("."),
+		".",
+		func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			// Exclude hidden files, directories, and files in subdirectories.
+			if !strings.HasPrefix(path, ".") && !d.IsDir() && !strings.Contains(path, string(os.PathSeparator)) {
+				fmt.Println("Regular file (not hidden, directory, file in subdir):", path)
+			}
+			return nil
+		},
+	)
+	if err != nil {
+		fmt.Println("Error walking directory:", err)
+	}
 }
 
 /**

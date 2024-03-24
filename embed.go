@@ -14,5 +14,5 @@ import (
 //go:embed users_source.txt
 var userSource string
 
-//go:embed config/*
+//go:embed json_data/*
 var modulesFs embed.FS
