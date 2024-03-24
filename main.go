@@ -769,6 +769,39 @@ func main() {
 	if _, err := io.Copy(localFile, newReader); err != nil {
 		fmt.Println("Error writing remote data to loca file: ", err)
 	}
+
+	// Using stdin/stdou/sterr: They are just files!
+	// os.Stdin, os.Stdout, and os.Stderr are all of type *os.File.
+	// This means you can use them with the same functions you would use with a file.
+	// For example, you can use io.Copy to copy data from os.Stdin to os.Stdout.
+	soFile, err := os.Open("random.yaml")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+	}
+	if _, err := io.Copy(os.Stdout, soFile); err != nil {
+		fmt.Println("Error copying file to stdout:", err)
+	}
+
+	// Reading data out of a stream: User records.
+	userFile, err := os.Open("users.txt")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+	}
+	defer userFile.Close()
+	fmt.Println("Decoding users from file:")
+
+	// The return value of `decodeUsers` is a channel.
+	// We can loop over the channel to get the decoded users
+	// using a simple `range` function. The range loop will
+	// automatically exit once the channel is closed.
+	// @see https://chat.openai.com/share/0d7ccf2c-29c0-4e7c-bfcc-1f72ffe54116
+	for user := range decodeUsers(context.Background(), userFile) {
+		if user.err != nil {
+			fmt.Println("Error decoding user:", user.err)
+			continue
+		}
+		fmt.Println(user)
+	}
 }
 
 /**
