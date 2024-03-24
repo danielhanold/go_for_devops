@@ -16,6 +16,11 @@ type User struct {
 	err  error
 }
 
+// Define a method to convert the user into a string.
+func (u User) String() string {
+	return fmt.Sprintf("%s:%d", u.Name, u.ID)
+}
+
 // Split a line from input file and return a User struct.
 func getUser(s string) (User, error) {
 	// Split the string by the colon.
@@ -96,4 +101,23 @@ func decodeUsers(ctx context.Context, r io.Reader) chan User {
 	}()
 
 	return ch
+}
+
+// Write a user record into a Writer (e.g. a file.)
+func writeUser(ctx context.Context, w io.Writer, u User) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// Write the user record to the writer.
+	if _, err := w.Write([]byte(u.String())); err != nil {
+		return err
+	}
+
+	// Write a newline character to separate the records.
+	if _, err := w.Write([]byte("\n")); err != nil {
+		return err
+	}
+
+	return nil
 }

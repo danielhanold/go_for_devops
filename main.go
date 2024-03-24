@@ -783,24 +783,46 @@ func main() {
 	}
 
 	// Reading data out of a stream: User records.
-	userFile, err := os.Open("users.txt")
+	userFile, err := os.Open("users_source.txt")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 	}
 	defer userFile.Close()
-	fmt.Println("Decoding users from file:")
-
 	// The return value of `decodeUsers` is a channel.
 	// We can loop over the channel to get the decoded users
 	// using a simple `range` function. The range loop will
 	// automatically exit once the channel is closed.
 	// @see https://chat.openai.com/share/0d7ccf2c-29c0-4e7c-bfcc-1f72ffe54116
+	fmt.Println("Decoding users from file:")
 	for user := range decodeUsers(context.Background(), userFile) {
 		if user.err != nil {
 			fmt.Println("Error decoding user:", user.err)
 			continue
 		}
 		fmt.Println(user)
+	}
+
+	// We can write data into a stream (a file), using the user list as a source.
+	userTargetFile, err := os.OpenFile("users_processed.txt", localFileFlags, 0644)
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+	}
+	defer userTargetFile.Close()
+
+	// Loop over the contents of the file again and write the detected
+	// users to another file.
+	// The source file is a stream in Go, and because we have already read all the
+	// contents of the file, we need to reset the file pointer to the beginning of the file.
+	// We can do this by using the Seek method on the file object.
+	// @see https://chat.openai.com/share/bae4fda7-314b-4aa2-b98e-233b87b0f3be for details.
+	_, err = userFile.Seek(0, 0)
+	if err != nil {
+		fmt.Println("Error seeking file:", err)
+	}
+	for u := range decodeUsers(context.Background(), userFile) {
+		if err := writeUser(context.Background(), userTargetFile, u); err != nil {
+			fmt.Println("Error writing user:", err)
+		}
 	}
 }
 
