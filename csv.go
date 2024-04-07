@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -72,4 +73,53 @@ func readRecs(filepath string, hasHeader bool) ([]csvRecord, error) {
 
 	// Return all records without an error.
 	return records, nil
+}
+
+// Same function as above, but using the bufio & bytes packages.
+// This modification will allow for a more efficient way to read the data
+// in regards to memory usage, as we are not converting the whole file to a string.
+func readRecsBytes(filepath string, hasHeader bool) ([]csvRecord, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Create a new scanner.
+	scanner := bufio.NewScanner(file)
+
+	// Declare a slice of records.
+	var records []csvRecord
+	lineNum := 0
+
+	for scanner.Scan() {
+		// Skip header line.
+		if hasHeader && lineNum == 0 {
+			fmt.Println("Skipping header line")
+			lineNum++
+			continue
+		}
+
+		// Increment the line number.
+		lineNum++
+
+		// Read the line.
+		line := scanner.Text()
+
+		// Skip empty lines.
+		if strings.TrimSpace(line) == "" {
+			fmt.Println("Skip empty line")
+			continue
+		}
+
+		var rec csvRecord = strings.Split(line, ",")
+		if err := rec.validate(); err != nil {
+			return nil, fmt.Errorf("entry at line %d was invalid: %w", lineNum, err)
+		}
+
+		records = append(records, rec)
+	}
+
+	// Return all records.
+	return records, scanner.Err()
 }

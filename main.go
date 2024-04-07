@@ -971,10 +971,21 @@ func main() {
 	if err != nil {
 		fmt.Println("Error reading CSV records:", err)
 	}
-	fmt.Println("CSV records:")
+	fmt.Println("CSV records (last, first):")
 	for _, rec := range csvRecs {
 		fmt.Printf("%s, %s\n", rec.last(), rec.first())
 	}
+
+	// Read byte records.
+	csvByteRecs, err := readRecsBytes("csv_data/names.csv", true)
+	if err != nil {
+		fmt.Println("Error reading CSV byte records:", err)
+	}
+	fmt.Println("CVS records again, but read by a bufio scanner (first, last):")
+	for _, rec := range csvByteRecs {
+		fmt.Printf("%s %s\n", rec.first(), rec.last())
+	}
+
 }
 
 /**
