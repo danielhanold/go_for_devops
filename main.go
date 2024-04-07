@@ -990,6 +990,23 @@ func main() {
 
 	// Write the slice of records sorted to a new outfile.
 	writeRecs(csvOutfile, csvByteRecs)
+
+	// Read records using the encoding/csv package.
+	csvRecsEncoding, err := readRecsCSV(csvInfile)
+	if err != nil {
+		fmt.Println("Error reading CSV records with encoding/csv:", err)
+	}
+	fmt.Println("CSV records using encoding/csv (first, last):")
+	for _, rec := range csvRecsEncoding {
+		fmt.Printf("%s %s\n", rec.first(), rec.last())
+	}
+
+	// Write the slice of recrds to a new outfile.
+	csvOutfileWriter := "csv_data/names_writer.csv"
+	writeCSVWriter(csvOutfileWriter, csvRecsEncoding)
+	if err != nil {
+		fmt.Println("Error writing CSV records with encoding/csv:", err)
+	}
 }
 
 /**

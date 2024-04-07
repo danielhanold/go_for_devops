@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -165,6 +167,80 @@ func writeRecs(filepath string, recs []csvRecord) error {
 	for _, rec := range recs {
 		_, err := file.Write(rec.csv())
 		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// The encoding/csv package provides two types for handling CSV files: Reader and Writer.
+// It confirms to the RFC 4180 standard, used to define CSV files.
+func readRecsCSV(filepath string) ([]csvRecord, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Create a new reader.
+	reader := csv.NewReader(file)
+	// Define the number of expected fields per record.
+	reader.FieldsPerRecord = 2
+	// Ignore any leading whitespace for each record, including leading commas.
+	reader.TrimLeadingSpace = true
+
+	// Create a slice of CVS records.
+	var recs []csvRecord
+
+	// Loop over al records and read line by line.
+	for {
+		// Read the next line in the CSV file.
+		data, err := reader.Read()
+
+		// Handle any errors, including the end of the file.
+		if err != nil {
+			// If the error is that there are no more lines (i.e. we have reached the end of the file),
+			// stop the loop execution.
+			if err == io.EOF {
+				break
+			}
+			// Otherwise, actually return the error.
+			return nil, err
+		}
+
+		// Skip lines that would be a comment.
+		if strings.HasPrefix(data[0], "#") || strings.HasPrefix(data[0], ";") {
+			fmt.Println("Skipping comment line:", strings.Join(data, " "))
+			continue
+		}
+
+		// Append the record to the slice of records.
+		// Validation is handled as part of the CSV reader.
+		rec := csvRecord(data)
+		recs = append(recs, rec)
+	}
+
+	// Return all records.
+	return recs, nil
+}
+
+// Function to write CSV records to a CSV file using the encoding/csv package.
+func writeCSVWriter(filepath string, recs []csvRecord) error {
+	// Create a new file and open it for writing.
+	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Create a new CSV writer.
+	w := csv.NewWriter(file)
+	defer w.Flush()
+
+	// Loop over slice of csvRecords and write each record to the file.
+	for _, rec := range recs {
+		if err := w.Write(rec); err != nil {
 			return err
 		}
 	}
