@@ -350,7 +350,7 @@ func main() {
 	fmt.Printf("%s is %d years old.\n", record.Name, record.Age)
 
 	// Declare a custom type.
-	// Custom types are their ow ntype, but they are based on an existing type.
+	// Custom types are their own type, but they are based on an existing type.
 	// Custom types and the types they are based on are not interchangeable.
 	//
 	// Define a custom type for a car model based on the string type.
@@ -959,6 +959,21 @@ func main() {
 	)
 	if err != nil {
 		fmt.Println("Error walking directory:", err)
+	}
+
+	/**
+	*
+	*
+	*
+	* Working with common data types (CSV, YAML).
+	**/
+	csvRecs, err := readRecs("csv_data/names.csv", true)
+	if err != nil {
+		fmt.Println("Error reading CSV records:", err)
+	}
+	fmt.Println("CSV records:")
+	for _, rec := range csvRecs {
+		fmt.Printf("%s, %s\n", rec.last(), rec.first())
 	}
 }
 
