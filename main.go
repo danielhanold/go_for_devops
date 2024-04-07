@@ -967,7 +967,9 @@ func main() {
 	*
 	* Working with common data types (CSV, YAML).
 	**/
-	csvRecs, err := readRecs("csv_data/names.csv", true)
+	csvInfile := "csv_data/names.csv"
+	csvOutfile := "csv_data/names_sorted.csv"
+	csvRecs, err := readRecs(csvInfile, true)
 	if err != nil {
 		fmt.Println("Error reading CSV records:", err)
 	}
@@ -977,7 +979,7 @@ func main() {
 	}
 
 	// Read byte records.
-	csvByteRecs, err := readRecsBytes("csv_data/names.csv", true)
+	csvByteRecs, err := readRecsBytes(csvInfile, true)
 	if err != nil {
 		fmt.Println("Error reading CSV byte records:", err)
 	}
@@ -986,6 +988,8 @@ func main() {
 		fmt.Printf("%s %s\n", rec.first(), rec.last())
 	}
 
+	// Write the slice of records sorted to a new outfile.
+	writeRecs(csvOutfile, csvByteRecs)
 }
 
 /**

@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -28,6 +30,25 @@ func (r csvRecord) first() string {
 // Get the last name of the record.
 func (r csvRecord) last() string {
 	return r[1]
+}
+
+// csv converts the csvRecord to a byte slice in CSV format.
+// Each field in the csvRecord is separated by a comma.
+// The resulting byte slice includes a newline character at the end.
+func (r csvRecord) csv() []byte {
+	// Create a new bytes.Buffer interface, which acts similar to an in-memory file.
+	b := bytes.Buffer{}
+
+	// Loop over each field in the record and write it to the buffer, separate by a comma
+	for _, field := range r {
+		b.WriteString(field + ",")
+	}
+
+	// Add a carriage return after the name.
+	b.WriteString("\n")
+
+	// Returns the buffer as a slice of bytes.
+	return b.Bytes()
 }
 
 // Create a method to read records. A few things to note:
@@ -122,4 +143,31 @@ func readRecsBytes(filepath string, hasHeader bool) ([]csvRecord, error) {
 
 	// Return all records.
 	return records, scanner.Err()
+}
+
+// Write CSV records sorted to a CSV outfile.
+func writeRecs(filepath string, recs []csvRecord) error {
+	// Create a new file and open it for writing.
+	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Sort passed slice of records by last name.
+	sort.Slice(
+		recs,
+		func(i, j int) bool {
+			return recs[i].last() < recs[j].last()
+		},
+	)
+
+	for _, rec := range recs {
+		_, err := file.Write(rec.csv())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
